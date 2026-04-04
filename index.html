@@ -3,74 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo Cáo Biểu Đồ Kệ Theo Khu Vực</title>
+    <title>Dashboard Báo Cáo Kệ - Hệ Thống Quản Lý NPP</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>📊 BÁO CÁO BIỂU ĐỒ KỆ THEO KHU VỰC</h1>
-            <p>Thống kê kệ đã xuất, kệ đã upload và kệ thiếu theo từng khu vực</p>
-            <div class="date">Ngày báo cáo: 01/04/2026</div>
-        </header>
+    <div class="app">
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <div class="logo-header">
+                        <div class="logo-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="logo-text">
+                            <h1>Báo Cáo CCDC</h1>
+                            <p>Hệ thống quản lý báo cáo kệ theo khu vực</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="date-badge">
+                        <i class="far fa-calendar-alt"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                </div>
+            </header>
 
-        <!-- Bộ lọc khu vực -->
-        <div class="filter-section">
-            <label for="kvSelect">Chọn khu vực:</label>
-            <select id="kvSelect">
-                <option value="all">📌 Tất cả khu vực</option>
-                <option value="KV1">KV1</option>
-                <option value="KV2">KV2</option>
-                <option value="KV3">KV3</option>
-                <option value="KV4">KV4</option>
-                <option value="KV5">KV5</option>
-                <option value="KV6">KV6</option>
-            </select>
-        </div>
-
-        <!-- Thẻ thông tin nhanh -->
-        <div class="stats-cards" id="statsCards"></div>
-
-        <!-- Biểu đồ tổng quan -->
-        <div class="chart-container">
-            <div class="chart-card">
-                <h3 id="chartTitle">📈 Tổng quan kệ theo khu vực</h3>
-                <canvas id="overviewChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Biểu đồ theo mức kệ -->
-        <div class="chart-container">
-            <div class="chart-card">
-                <h3 id="levelChartTitle">📊 Thống kê kệ đã upload theo mức</h3>
-                <canvas id="levelChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Bảng dữ liệu chi tiết -->
-        <div class="data-table-container">
-            <div class="table-header">
-                <h3 id="tableTitle">📋 Bảng dữ liệu chi tiết</h3>
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm theo tên NPP...">
-                    <button id="clearSearch">✖</button>
+            <!-- Filter Section -->
+            <div class="filter-card">
+                <div class="filter-label">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Chọn khu vực</span>
+                </div>
+                <div class="filter-controls">
+                    <select id="kvSelect" class="filter-select">
+                        <option value="all">📌 Tất cả khu vực</option>
+                        <option value="KV1"> Khu vực 1</option>
+                        <option value="KV2"> Khu vực 2</option>
+                        <option value="KV3"> Khu vực 3</option>
+                        <option value="KV4"> Khu vực 4</option>
+                        <option value="KV5"> Khu vực 5</option>
+                        <option value="KV6"> Khu vực 6</option>
+                    </select>
+                    <div class="filter-icon">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
                 </div>
             </div>
-            <div class="table-wrapper">
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>Khu vực</th>
-                            <th>NPP</th>
-                            <th>Kệ đã xuất</th>
-                            <th>Kệ đã upload</th>
-                            <th>Kệ thiếu</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                    </tbody>
-                </table>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" id="statsCards"></div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <!-- Overview Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-chart-simple"></i>
+                            <span id="chartTitle">Tổng quan kệ theo khu vực</span>
+                        </h3>
+                        <div class="chart-actions">
+                            <button class="chart-action-btn" onclick="downloadChart('overviewChart')" title="Tải ảnh">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="chart-action-btn" onclick="expandChart('overviewChart')" title="Phóng to">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="overviewChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Level Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3>
+                            <i class="fas fa-layer-group"></i>
+                            <span id="levelChartTitle">Thống kê kệ theo mức</span>
+                        </h3>
+                        <div class="chart-actions">
+                            <button class="chart-action-btn" onclick="downloadChart('levelChart')" title="Tải ảnh">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="chart-action-btn" onclick="expandChart('levelChart')" title="Phóng to">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="levelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-card">
+                <div class="table-header-custom">
+                    <div class="table-title">
+                        <i class="fas fa-table-list"></i>
+                        <h3 id="tableTitle">Dữ liệu chi tiết</h3>
+                    </div>
+                    <div class="table-actions">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="searchInput" placeholder="Tìm kiếm NPP...">
+                            <button id="clearSearch" class="clear-btn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <button class="export-btn" onclick="exportToExcel()">
+                            <i class="fas fa-file-excel"></i>
+                            <span>Xuất Excel</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-map-pin"></i> Khu vực</th>
+                                <th><i class="fas fa-store"></i> NPP</th>
+                                <th><i class="fas fa-boxes"></i> Kệ đã xuất</th>
+                                <th><i class="fas fa-cloud-upload-alt"></i> Kệ đã upload</th>
+                                <th><i class="fas fa-exclamation-triangle"></i> Kệ thiếu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for chart expansion -->
+    <div id="chartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Biểu đồ</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <canvas id="modalChart"></canvas>
             </div>
         </div>
     </div>
