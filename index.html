@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Biểu Đồ Kệ Theo Khu Vực</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 BÁO CÁO BIỂU ĐỒ KỆ THEO KHU VỰC</h1>
+            <p>Thống kê kệ đã xuất, kệ đã upload và kệ thiếu theo từng khu vực</p>
+            <div class="date">Ngày báo cáo: 01/04/2026</div>
+        </header>
+
+        <!-- Bộ lọc khu vực -->
+        <div class="filter-section">
+            <label for="kvSelect">Chọn khu vực:</label>
+            <select id="kvSelect">
+                <option value="all">📌 Tất cả khu vực</option>
+                <option value="KV1">KV1</option>
+                <option value="KV2">KV2</option>
+                <option value="KV3">KV3</option>
+                <option value="KV4">KV4</option>
+                <option value="KV5">KV5</option>
+                <option value="KV6">KV6</option>
+            </select>
+        </div>
+
+        <!-- Thẻ thông tin nhanh -->
+        <div class="stats-cards" id="statsCards"></div>
+
+        <!-- Biểu đồ tổng quan -->
+        <div class="chart-container">
+            <div class="chart-card">
+                <h3 id="chartTitle">📈 Tổng quan kệ theo khu vực</h3>
+                <canvas id="overviewChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Biểu đồ theo mức kệ -->
+        <div class="chart-container">
+            <div class="chart-card">
+                <h3 id="levelChartTitle">📊 Thống kê kệ đã upload theo mức</h3>
+                <canvas id="levelChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bảng dữ liệu chi tiết -->
+        <div class="data-table-container">
+            <div class="table-header">
+                <h3 id="tableTitle">📋 Bảng dữ liệu chi tiết</h3>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm theo tên NPP...">
+                    <button id="clearSearch">✖</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Khu vực</th>
+                            <th>NPP</th>
+                            <th>Kệ đã xuất</th>
+                            <th>Kệ đã upload</th>
+                            <th>Kệ thiếu</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
