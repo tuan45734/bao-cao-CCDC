@@ -185,7 +185,7 @@ body {
 /* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
     margin-bottom: 32px;
 }
@@ -727,4 +727,7 @@ tbody tr:hover {
         box-shadow: none;
         border: 1px solid #ddd;
     }
+}
+.stat-card.info .number {
+    color: #f59e0b;
 }
