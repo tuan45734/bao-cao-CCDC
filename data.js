@@ -54,8 +54,8 @@ const nppByKV = [
     ['NPP Sơn Lâm', 'KV5'],
     ['NPP Thái Hoà', 'KV5'],
     ['NPP Thảo Xuân', 'KV5'],
-    ['NPP Duy khoa', 'KV5'],
     ['NPP Duy Khoa', 'KV5'],
+    
     ['NPP Tuấn Vân', 'KV5'],
     ['NPP Vũ Đức Nam', 'KV5'],
     
