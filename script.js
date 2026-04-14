@@ -69,16 +69,14 @@ function processData() {
     allKVs.forEach(kv => {
         kvStats.set(kv, {
             exported: 0,
+            registered: 0,
             uploaded: 0,
             notUploaded: 0,
-            registered: 0,
-            // Thống kê theo mức đã upload
             uploadedByLevel: { 
                 'Mức 1 (TB 01 kệ)': 0, 
                 'Mức 2 (TB 02 kệ)': 0,
                 'Mức 3 (TB 03 kệ)': 0
             },
-            // Thống kê theo mức chưa upload
             notUploadedByLevel: {
                 'Mức 1 (TB 01 kệ)': 0,
                 'Mức 2 (TB 02 kệ)': 0,
@@ -108,7 +106,6 @@ function processData() {
             'Mức 3 (TB 03 kệ)': 0
         };
         
-        // Thống kê theo mức cho uploaded
         for (let [key, count] of uploadedByLevel) {
             if (key.startsWith(npp + '|')) {
                 const level = key.split('|')[1];
@@ -117,7 +114,6 @@ function processData() {
             }
         }
         
-        // Thống kê theo mức cho notUploaded
         const nppNotUploadLevels = {
             'Mức 1 (TB 01 kệ)': 0,
             'Mức 2 (TB 02 kệ)': 0,
@@ -156,12 +152,12 @@ function updateStatsCards(kvStats, selectedKV) {
     const statsCards = document.getElementById('statsCards');
     
     if (selectedKV === 'all') {
-        let totalExported = 0, totalUploaded = 0, totalNotUploaded = 0, totalRegistered = 0, totalShortage = 0;
+        let totalExported = 0, totalRegistered = 0, totalUploaded = 0, totalNotUploaded = 0, totalShortage = 0;
         kvStats.forEach(stat => {
             totalExported += stat.exported;
+            totalRegistered += stat.registered;
             totalUploaded += stat.uploaded;
             totalNotUploaded += stat.notUploaded;
-            totalRegistered += stat.registered;
             totalShortage += Math.max(0, stat.exported - stat.registered);
         });
         
@@ -170,6 +166,12 @@ function updateStatsCards(kvStats, selectedKV) {
                 <div class="stat-icon">📦</div>
                 <h4>Tổng kệ đã xuất</h4>
                 <div class="number">${totalExported.toLocaleString()}</div>
+                <div class="unit">kệ</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <h4>Tổng kệ đã đăng ký</h4>
+                <div class="number">${totalRegistered.toLocaleString()}</div>
                 <div class="unit">kệ</div>
             </div>
             <div class="stat-card success">
@@ -182,12 +184,6 @@ function updateStatsCards(kvStats, selectedKV) {
                 <div class="stat-icon">⏳</div>
                 <h4>Tổng kệ chưa upload</h4>
                 <div class="number">${totalNotUploaded.toLocaleString()}</div>
-                <div class="unit">kệ</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📋</div>
-                <h4>Tổng kệ đã đăng ký</h4>
-                <div class="number">${totalRegistered.toLocaleString()}</div>
                 <div class="unit">kệ</div>
             </div>
             <div class="stat-card warning">
@@ -215,6 +211,12 @@ function updateStatsCards(kvStats, selectedKV) {
                 <div class="number">${stat.exported.toLocaleString()}</div>
                 <div class="unit">kệ</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <h4>Kệ đã đăng ký</h4>
+                <div class="number">${stat.registered.toLocaleString()}</div>
+                <div class="unit">kệ</div>
+            </div>
             <div class="stat-card success">
                 <div class="stat-icon">📤</div>
                 <h4>Kệ đã upload</h4>
@@ -225,12 +227,6 @@ function updateStatsCards(kvStats, selectedKV) {
                 <div class="stat-icon">⏳</div>
                 <h4>Kệ chưa upload</h4>
                 <div class="number">${stat.notUploaded.toLocaleString()}</div>
-                <div class="unit">kệ</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📋</div>
-                <h4>Kệ đã đăng ký</h4>
-                <div class="number">${stat.registered.toLocaleString()}</div>
                 <div class="unit">kệ</div>
             </div>
             <div class="stat-card warning">
@@ -260,12 +256,13 @@ function updateOverviewChart(kvStats, selectedKV) {
     if (selectedKV === 'all') {
         chartTitle.innerHTML = 'Tổng quan kệ theo khu vực';
         labels = allKVs;
-        const exportedData = [], registeredData = [], notUploadedData = [], shortageData = [];
+        const exportedData = [], registeredData = [], uploadedData = [], notUploadedData = [], shortageData = [];
         
         allKVs.forEach(kv => {
             const stat = kvStats.get(kv);
             exportedData.push(stat.exported);
             registeredData.push(stat.registered);
+            uploadedData.push(stat.uploaded);
             notUploadedData.push(stat.notUploaded);
             shortageData.push(Math.max(0, stat.exported - stat.registered));
         });
@@ -281,6 +278,13 @@ function updateOverviewChart(kvStats, selectedKV) {
             {
                 label: 'Kệ đã đăng ký',
                 data: registeredData,
+                backgroundColor: 'rgba(139, 92, 246, 0.85)',
+                borderRadius: 8,
+                borderWidth: 0
+            },
+            {
+                label: 'Kệ đã upload',
+                data: uploadedData,
                 backgroundColor: 'rgba(16, 185, 129, 0.85)',
                 borderRadius: 8,
                 borderWidth: 0
@@ -306,6 +310,7 @@ function updateOverviewChart(kvStats, selectedKV) {
         labels = stat.details.map(d => d.npp);
         const exportedData = stat.details.map(d => d.exported);
         const registeredData = stat.details.map(d => d.registered);
+        const uploadedData = stat.details.map(d => d.uploaded);
         const notUploadedData = stat.details.map(d => d.notUploaded);
         const shortageData = stat.details.map(d => Math.max(0, d.shortage));
         
@@ -320,6 +325,13 @@ function updateOverviewChart(kvStats, selectedKV) {
             {
                 label: 'Kệ đã đăng ký',
                 data: registeredData,
+                backgroundColor: 'rgba(139, 92, 246, 0.85)',
+                borderRadius: 8,
+                borderWidth: 0
+            },
+            {
+                label: 'Kệ đã upload',
+                data: uploadedData,
                 backgroundColor: 'rgba(16, 185, 129, 0.85)',
                 borderRadius: 8,
                 borderWidth: 0
@@ -349,16 +361,56 @@ function updateOverviewChart(kvStats, selectedKV) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: { 
                     position: 'top', 
                     labels: { usePointStyle: true, boxWidth: 8, font: { size: 12 } } 
                 },
                 tooltip: { 
-                    callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()} kệ` },
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const label = tooltipItems[0].label;
+                            if (selectedKV === 'all') {
+                                const kvName = {
+                                    'KV1': 'Khu vực 1',
+                                    'KV2': 'Khu vực 2',
+                                    'KV3': 'Khu vực 3',
+                                    'KV4': 'Khu vực 4',
+                                    'KV5': 'Khu vực 5',
+                                    'KV6': 'Khu vực 6'
+                                };
+                                return kvName[label] || label;
+                            }
+                            return `📌 ${label}`;
+                        },
+                        label: (ctx) => {
+                            let label = ctx.dataset.label || '';
+                            let value = ctx.raw.toLocaleString();
+                            return `${label}: ${value} kệ`;
+                        },
+                        footer: function(tooltipItems) {
+                            if (selectedKV !== 'all') {
+                                const label = tooltipItems[0].label;
+                                const stat = kvStats.get(selectedKV);
+                                const detail = stat.details.find(d => d.npp === label);
+                                // if (detail) {
+                                //     const shortage = Math.max(0, detail.exported - detail.registered);
+                                //     return `📊 Thiếu: ${shortage.toLocaleString()} kệ`;
+                                // }
+                            }
+                            return '';
+                        }
+                    },
                     backgroundColor: '#1f2937',
-                    padding: 10,
-                    cornerRadius: 8
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: { size: 13, weight: 'bold' },
+                    bodyFont: { size: 12 },
+                    footerFont: { size: 12, style: 'italic' }
                 }
             },
             scales: {
@@ -426,27 +478,68 @@ function updateLevelChart(kvStats, selectedKV) {
         data: {
             labels: labels,
             datasets: [
-                { label: 'Đã upload - Mức 1 (1 kệ)', data: uploadedLevel1, backgroundColor: 'rgba(16, 185, 129, 0.7)', borderRadius: 8, borderWidth: 0 },
-                { label: 'Đã upload - Mức 2 (2 kệ)', data: uploadedLevel2, backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 8, borderWidth: 0 },
-                { label: 'Đã upload - Mức 3 (3 kệ)', data: uploadedLevel3, backgroundColor: 'rgba(16, 185, 129, 1)', borderRadius: 8, borderWidth: 0 },
-                { label: 'Chưa upload - Mức 1 (1 kệ)', data: notUploadedLevel1, backgroundColor: 'rgba(245, 158, 11, 0.7)', borderRadius: 8, borderWidth: 0 },
-                { label: 'Chưa upload - Mức 2 (2 kệ)', data: notUploadedLevel2, backgroundColor: 'rgba(245, 158, 11, 0.85)', borderRadius: 8, borderWidth: 0 },
-                { label: 'Chưa upload - Mức 3 (3 kệ)', data: notUploadedLevel3, backgroundColor: 'rgba(245, 158, 11, 1)', borderRadius: 8, borderWidth: 0 }
+                { label: '✅ Đã upload - Mức 1 (1 kệ)', data: uploadedLevel1, backgroundColor: 'rgba(16, 185, 129, 0.7)', borderRadius: 8, borderWidth: 0 },
+                { label: '✅ Đã upload - Mức 2 (2 kệ)', data: uploadedLevel2, backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 8, borderWidth: 0 },
+                { label: '✅ Đã upload - Mức 3 (3 kệ)', data: uploadedLevel3, backgroundColor: 'rgba(16, 185, 129, 1)', borderRadius: 8, borderWidth: 0 },
+                { label: '⏳ Chưa upload - Mức 1 (1 kệ)', data: notUploadedLevel1, backgroundColor: 'rgba(245, 158, 11, 0.7)', borderRadius: 8, borderWidth: 0 },
+                { label: '⏳ Chưa upload - Mức 2 (2 kệ)', data: notUploadedLevel2, backgroundColor: 'rgba(245, 158, 11, 0.85)', borderRadius: 8, borderWidth: 0 },
+                { label: '⏳ Chưa upload - Mức 3 (3 kệ)', data: notUploadedLevel3, backgroundColor: 'rgba(245, 158, 11, 1)', borderRadius: 8, borderWidth: 0 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: { 
                     position: 'top', 
-                    labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } } 
+                    labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } 
                 },
                 tooltip: { 
-                    callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()} kệ` },
+                    callbacks: {
+                        title: function(tooltipItems) {
+                            const label = tooltipItems[0].label;
+                            if (selectedKV === 'all') {
+                                const kvName = {
+                                    'KV1': 'Khu vực 1',
+                                    'KV2': 'Khu vực 2',
+                                    'KV3': 'Khu vực 3',
+                                    'KV4': 'Khu vực 4',
+                                    'KV5': 'Khu vực 5',
+                                    'KV6': 'Khu vực 6'
+                                };
+                                return kvName[label] || label;
+                            }
+                            return `📌 ${label}`;
+                        },
+                        label: (ctx) => {
+                            let label = ctx.dataset.label || '';
+                            let value = ctx.raw.toLocaleString();
+                            return `${label}: ${value} kệ`;
+                        },
+                        footer: function(tooltipItems) {
+                            if (selectedKV !== 'all') {
+                                const label = tooltipItems[0].label;
+                                const stat = kvStats.get(selectedKV);
+                                const detail = stat.details.find(d => d.npp === label);
+                                // if (detail) {
+                                //     const totalUploaded = detail.uploaded;
+                                //     const totalNotUploaded = detail.notUploaded;
+                                //     return `📊 Tổng: ${(totalUploaded + totalNotUploaded).toLocaleString()} kệ`;
+                                // }
+                            }
+                            return '';
+                        }
+                    },
                     backgroundColor: '#1f2937',
-                    padding: 10,
-                    cornerRadius: 8
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: { size: 13, weight: 'bold' },
+                    bodyFont: { size: 11 },
+                    footerFont: { size: 11, style: 'italic' }
                 }
             },
             scales: {
@@ -484,14 +577,14 @@ function updateDataTable(kvStats, selectedKV, searchTerm = '') {
             
             const kvHeader = document.createElement('tr');
             kvHeader.style.background = '#f9fafb';
-            kvHeader.innerHTML = `<td colspan="7" style="background: #f9fafb; font-weight: 600; border-top: 2px solid #e5e7eb;">📌 ${kv} - Xuất: ${stat.exported.toLocaleString()} | Đã đăng ký: ${stat.registered.toLocaleString()} | Thiếu: ${Math.max(0, stat.exported - stat.registered).toLocaleString()}</td>`;
+            kvHeader.innerHTML = `<td colspan="7" style="background: #f9fafb; font-weight: 600; border-top: 2px solid #e5e7eb;">📌 ${kv} - Xuất: ${stat.exported.toLocaleString()} | Đăng ký: ${stat.registered.toLocaleString()} | Thiếu: ${Math.max(0, stat.exported - stat.registered).toLocaleString()}</td>`;
             tableBody.appendChild(kvHeader);
             
             filteredDetails.forEach(detail => {
                 const row = document.createElement('tr');
                 const shortageClass = detail.shortage > 0 ? 'badge-danger' : 'badge-success';
                 const shortageText = detail.shortage > 0 ? `Thiếu ${detail.shortage.toLocaleString()}` : 'Đủ';
-                row.innerHTML = `<td>${kv}</td><td><strong>${detail.npp}</strong></td><td>${detail.exported.toLocaleString()}</td><td>${detail.uploaded.toLocaleString()}</td><td>${detail.notUploaded.toLocaleString()}</td><td>${detail.registered.toLocaleString()}</td><td><span class="badge ${shortageClass}">${shortageText}</span></td>`;
+                row.innerHTML = `<td>${kv}</td><td><strong>${detail.npp}</strong></td><td>${detail.exported.toLocaleString()}</td><td>${detail.registered.toLocaleString()}</td><td>${detail.uploaded.toLocaleString()}</td><td>${detail.notUploaded.toLocaleString()}</td><td><span class="badge ${shortageClass}">${shortageText}</span></td>`;
                 tableBody.appendChild(row);
             });
         });
@@ -512,7 +605,7 @@ function updateDataTable(kvStats, selectedKV, searchTerm = '') {
                 const row = document.createElement('tr');
                 const shortageClass = detail.shortage > 0 ? 'badge-danger' : 'badge-success';
                 const shortageText = detail.shortage > 0 ? `Thiếu ${detail.shortage.toLocaleString()}` : 'Đủ';
-                row.innerHTML = `<td>${selectedKV}</td><td><strong>${detail.npp}</strong></td><td>${detail.exported.toLocaleString()}</td><td>${detail.uploaded.toLocaleString()}</td><td>${detail.notUploaded.toLocaleString()}</td><td>${detail.registered.toLocaleString()}</td><td><span class="badge ${shortageClass}">${shortageText}</span></td>`;
+                row.innerHTML = `<td>${selectedKV}</td><td><strong>${detail.npp}</strong></td><td>${detail.exported.toLocaleString()}</td><td>${detail.registered.toLocaleString()}</td><td>${detail.uploaded.toLocaleString()}</td><td>${detail.notUploaded.toLocaleString()}</td><td><span class="badge ${shortageClass}">${shortageText}</span></td>`;
                 tableBody.appendChild(row);
             });
         }
@@ -607,7 +700,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initDashboard();
     });
     
-    // Close modal on outside click
     window.onclick = (e) => {
         const modal = document.getElementById('chartModal');
         if (e.target === modal) closeModal();
