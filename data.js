@@ -233,7 +233,8 @@ const exportedData = [
 {   "npp": "NPP Cường Thịnh",   "sl": 50,   "ngay": "07/04/2026" },
 {   "npp": "NPP Phúc Thịnh",   "sl": 110,   "ngay": "10/04/2026" },
 {   "npp": "NPP Tây Đô",   "sl": 50,   "ngay": "10/04/2026" },
-{   "npp": "NPP Vũ Tấm",   "sl": 50,   "ngay": "11/04/2026" }
+{   "npp": "NPP Vũ Tấm",   "sl": 50,   "ngay": "11/04/2026" },
+{   "npp": "NPP Ánh Thu",   "sl": 100,   "ngay": "13/04/2026" }
 ];
 
 // Dữ liệu kệ đã upload
