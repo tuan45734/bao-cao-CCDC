@@ -119,7 +119,7 @@ const exportedData = [
  {   "npp": "NPP Tân Thúy",   "sl": 341 },
  {   "npp": "NPP Dũng Béo",   "sl": 354 },
  {   "npp": "NPP Thăng Hương",   "sl": 50 },
-  {   "npp": "NPP Đồng Lợi",   "sl": 10 },
+  {   "npp": "NPP Đồng Lợi",   "sl": 260 },
  {   "npp": "NPP Hoàng Minh",   "sl": 290 },
  {   "npp": "NPP Tuấn Vân",   "sl": 63 },
  {   "npp": "NPP Thái Hoà",   "sl": 191 },
