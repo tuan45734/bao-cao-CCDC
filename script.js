@@ -196,7 +196,7 @@ function updateStatsCards(kvStats, selectedKV) {
                 <div class="stat-icon">🏠</div>
                 <h4>Tổng số NPP</h4>
                 <div class="number">${nppByKV.length}</div>
-                <div class="unit">đại lý</div>
+                <div class="unit">NPP</div>
             </div>
         `;
     } else {
