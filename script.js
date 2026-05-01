@@ -1,10 +1,34 @@
+// ========== DASHBOARD GỐC (giữ nguyên) ==========
 // Khởi tạo biến toàn cục
 let overviewChart = null;
 let levelChart = null;
 let currentKV = 'all';
 let currentSearchTerm = '';
+let currentUserRole = null;  // 'KV1'..'KV6' hoặc 'ADMIN'
+let currentUserRoleName = '';
 
-// Hàm xác định số kệ tương ứng với mức
+// Map mã đăng nhập -> khu vực
+const LOGIN_CREDENTIALS = {
+    'KV1ADZ': 'KV1',
+    'KV2ZAC': 'KV2',
+    'KV3CCC': 'KV3',
+    'KV4YXY': 'KV4',
+    'KV5XXZ': 'KV5',
+    'KV6XBC': 'KV6',
+    'ADMIN99': 'ADMIN'
+};
+
+const ROLE_NAMES = {
+    'KV1': 'Khu vực 1',
+    'KV2': 'Khu vực 2',
+    'KV3': 'Khu vực 3',
+    'KV4': 'Khu vực 4',
+    'KV5': 'Khu vực 5',
+    'KV6': 'Khu vực 6',
+    'ADMIN': 'Quản trị viên'
+};
+
+// ========== HÀM XỬ LÝ DỮ LIỆU (giữ nguyên từ file gốc) ==========
 function getSoKeByMuc(mucKe) {
     if (mucKe === 'Mức 1 (TB 01 kệ)') return 1;
     if (mucKe === 'Mức 2 (TB 02 kệ)') return 2;
@@ -12,7 +36,6 @@ function getSoKeByMuc(mucKe) {
     return 0;
 }
 
-// Hàm xử lý dữ liệu
 function processData() {
     const nppToKV = new Map();
     nppByKV.forEach(([npp, kv]) => {
@@ -26,7 +49,6 @@ function processData() {
         exportedByNPP.set(npp, current + (item.sl || 0));
     });
 
-    // Xử lý dữ liệu đã upload
     const uploadedByNPP = new Map();
     const uploadedByLevel = new Map();
     
@@ -44,7 +66,6 @@ function processData() {
         uploadedByLevel.set(levelKey, currentLevel + soKe);
     });
 
-    // Xử lý dữ liệu chưa upload
     const notUploadedByNPP = new Map();
     const notUploadedByLevel = new Map();
     
@@ -147,7 +168,7 @@ function processData() {
     return { kvStats, allKVs };
 }
 
-// Hàm cập nhật thống kê nhanh
+// ========== CÁC HÀM CẬP NHẬT DASHBOARD (có điều chỉnh phân quyền) ==========
 function updateStatsCards(kvStats, selectedKV) {
     const statsCards = document.getElementById('statsCards');
     
@@ -245,7 +266,6 @@ function updateStatsCards(kvStats, selectedKV) {
     }
 }
 
-// Hàm cập nhật biểu đồ tổng quan (Biểu đồ 1)
 function updateOverviewChart(kvStats, selectedKV) {
     const ctx = document.getElementById('overviewChart').getContext('2d');
     const chartTitle = document.getElementById('chartTitle');
@@ -268,41 +288,11 @@ function updateOverviewChart(kvStats, selectedKV) {
         });
         
         datasets = [
-            {
-                label: 'Kệ đã xuất',
-                data: exportedData,
-                backgroundColor: 'rgba(99, 102, 241, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ đã đăng ký',
-                data: registeredData,
-                backgroundColor: 'rgba(139, 92, 246, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ đã upload',
-                data: uploadedData,
-                backgroundColor: 'rgba(16, 185, 129, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ chưa upload',
-                data: notUploadedData,
-                backgroundColor: 'rgba(245, 158, 11, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ thiếu',
-                data: shortageData,
-                backgroundColor: 'rgba(239, 68, 68, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            }
+            { label: 'Kệ đã xuất', data: exportedData, backgroundColor: 'rgba(99, 102, 241, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ đã đăng ký', data: registeredData, backgroundColor: 'rgba(139, 92, 246, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ đã upload', data: uploadedData, backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ chưa upload', data: notUploadedData, backgroundColor: 'rgba(245, 158, 11, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ thiếu', data: shortageData, backgroundColor: 'rgba(239, 68, 68, 0.85)', borderRadius: 8, borderWidth: 0 }
         ];
     } else {
         chartTitle.innerHTML = `Chi tiết kệ theo NPP - ${selectedKV}`;
@@ -315,41 +305,11 @@ function updateOverviewChart(kvStats, selectedKV) {
         const shortageData = stat.details.map(d => Math.max(0, d.shortage));
         
         datasets = [
-            {
-                label: 'Kệ đã xuất',
-                data: exportedData,
-                backgroundColor: 'rgba(99, 102, 241, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ đã đăng ký',
-                data: registeredData,
-                backgroundColor: 'rgba(139, 92, 246, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ đã upload',
-                data: uploadedData,
-                backgroundColor: 'rgba(16, 185, 129, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ chưa upload',
-                data: notUploadedData,
-                backgroundColor: 'rgba(245, 158, 11, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            },
-            {
-                label: 'Kệ thiếu',
-                data: shortageData,
-                backgroundColor: 'rgba(239, 68, 68, 0.85)',
-                borderRadius: 8,
-                borderWidth: 0
-            }
+            { label: 'Kệ đã xuất', data: exportedData, backgroundColor: 'rgba(99, 102, 241, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ đã đăng ký', data: registeredData, backgroundColor: 'rgba(139, 92, 246, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ đã upload', data: uploadedData, backgroundColor: 'rgba(16, 185, 129, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ chưa upload', data: notUploadedData, backgroundColor: 'rgba(245, 158, 11, 0.85)', borderRadius: 8, borderWidth: 0 },
+            { label: 'Kệ thiếu', data: shortageData, backgroundColor: 'rgba(239, 68, 68, 0.85)', borderRadius: 8, borderWidth: 0 }
         ];
     }
     
@@ -361,74 +321,30 @@ function updateOverviewChart(kvStats, selectedKV) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
             plugins: {
-                legend: { 
-                    position: 'top', 
-                    labels: { usePointStyle: true, boxWidth: 8, font: { size: 12 } } 
-                },
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 12 } } },
                 tooltip: { 
                     callbacks: {
                         title: function(tooltipItems) {
                             const label = tooltipItems[0].label;
                             if (selectedKV === 'all') {
-                                const kvName = {
-                                    'KV1': 'Khu vực 1',
-                                    'KV2': 'Khu vực 2',
-                                    'KV3': 'Khu vực 3',
-                                    'KV4': 'Khu vực 4',
-                                    'KV5': 'Khu vực 5',
-                                    'KV6': 'Khu vực 6'
-                                };
+                                const kvName = { 'KV1': 'Khu vực 1', 'KV2': 'Khu vực 2', 'KV3': 'Khu vực 3', 'KV4': 'Khu vực 4', 'KV5': 'Khu vực 5', 'KV6': 'Khu vực 6' };
                                 return kvName[label] || label;
                             }
                             return `📌 ${label}`;
                         },
-                        label: (ctx) => {
-                            let label = ctx.dataset.label || '';
-                            let value = ctx.raw.toLocaleString();
-                            return `${label}: ${value} kệ`;
-                        },
-                        footer: function(tooltipItems) {
-                            if (selectedKV !== 'all') {
-                                const label = tooltipItems[0].label;
-                                const stat = kvStats.get(selectedKV);
-                                const detail = stat.details.find(d => d.npp === label);
-                                // if (detail) {
-                                //     const shortage = Math.max(0, detail.exported - detail.registered);
-                                //     return `📊 Thiếu: ${shortage.toLocaleString()} kệ`;
-                                // }
-                            }
-                            return '';
-                        }
-                    },
-                    backgroundColor: '#1f2937',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: { size: 13, weight: 'bold' },
-                    bodyFont: { size: 12 },
-                    footerFont: { size: 12, style: 'italic' }
+                        label: (ctx) => `${ctx.dataset.label || ''}: ${ctx.raw.toLocaleString()} kệ`
+                    }
                 }
             },
             scales: {
-                y: { 
-                    beginAtZero: true, 
-                    title: { display: true, text: 'Số lượng (kệ)', font: { size: 12 } }, 
-                    grid: { borderDash: [5, 5], color: '#e5e7eb' } 
-                },
-                x: { 
-                    title: { display: true, text: selectedKV === 'all' ? 'Khu vực' : 'Nhà phân phối', font: { size: 12 } }, 
-                    ticks: { maxRotation: 45, minRotation: 45, font: { size: 11 } } 
-                }
+                y: { beginAtZero: true, title: { display: true, text: 'Số lượng (kệ)', font: { size: 12 } }, grid: { borderDash: [5, 5], color: '#e5e7eb' } },
+                x: { title: { display: true, text: selectedKV === 'all' ? 'Khu vực' : 'Nhà phân phối', font: { size: 12 } }, ticks: { maxRotation: 45, minRotation: 45, font: { size: 11 } } }
             }
         }
     });
 }
 
-// Hàm cập nhật biểu đồ theo mức kệ (Biểu đồ 2)
 function updateLevelChart(kvStats, selectedKV) {
     const ctx = document.getElementById('levelChart').getContext('2d');
     const levelChartTitle = document.getElementById('levelChartTitle');
@@ -489,75 +405,18 @@ function updateLevelChart(kvStats, selectedKV) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
             plugins: {
-                legend: { 
-                    position: 'top', 
-                    labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } 
-                },
-                tooltip: { 
-                    callbacks: {
-                        title: function(tooltipItems) {
-                            const label = tooltipItems[0].label;
-                            if (selectedKV === 'all') {
-                                const kvName = {
-                                    'KV1': 'Khu vực 1',
-                                    'KV2': 'Khu vực 2',
-                                    'KV3': 'Khu vực 3',
-                                    'KV4': 'Khu vực 4',
-                                    'KV5': 'Khu vực 5',
-                                    'KV6': 'Khu vực 6'
-                                };
-                                return kvName[label] || label;
-                            }
-                            return `📌 ${label}`;
-                        },
-                        label: (ctx) => {
-                            let label = ctx.dataset.label || '';
-                            let value = ctx.raw.toLocaleString();
-                            return `${label}: ${value} kệ`;
-                        },
-                        footer: function(tooltipItems) {
-                            if (selectedKV !== 'all') {
-                                const label = tooltipItems[0].label;
-                                const stat = kvStats.get(selectedKV);
-                                const detail = stat.details.find(d => d.npp === label);
-                                // if (detail) {
-                                //     const totalUploaded = detail.uploaded;
-                                //     const totalNotUploaded = detail.notUploaded;
-                                //     return `📊 Tổng: ${(totalUploaded + totalNotUploaded).toLocaleString()} kệ`;
-                                // }
-                            }
-                            return '';
-                        }
-                    },
-                    backgroundColor: '#1f2937',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: { size: 13, weight: 'bold' },
-                    bodyFont: { size: 11 },
-                    footerFont: { size: 11, style: 'italic' }
-                }
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString()} kệ` } }
             },
             scales: {
-                y: { 
-                    beginAtZero: true, 
-                    title: { display: true, text: 'Số lượng kệ', font: { size: 12 } }, 
-                    grid: { borderDash: [5, 5], color: '#e5e7eb' } 
-                },
-                x: { 
-                    title: { display: true, text: selectedKV === 'all' ? 'Khu vực' : 'Nhà phân phối', font: { size: 12 } }, 
-                    ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 } } 
-                }
+                y: { beginAtZero: true, title: { display: true, text: 'Số lượng kệ', font: { size: 12 } }, grid: { borderDash: [5, 5], color: '#e5e7eb' } },
+                x: { title: { display: true, text: selectedKV === 'all' ? 'Khu vực' : 'Nhà phân phối', font: { size: 12 } }, ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 } } }
             }
         }
     });
 }
 
-// Hàm cập nhật bảng dữ liệu
 function updateDataTable(kvStats, selectedKV, searchTerm = '') {
     const tableBody = document.getElementById('tableBody');
     const tableTitle = document.getElementById('tableTitle');
@@ -612,11 +471,39 @@ function updateDataTable(kvStats, selectedKV, searchTerm = '') {
     }
 }
 
-// Hàm khởi tạo dashboard
+// ========== HÀM KHỞI TẠO DASHBOARD VỚI PHÂN QUYỀN ==========
 function initDashboard() {
     const { kvStats, allKVs } = processData();
-    const selectedKV = document.getElementById('kvSelect').value;
+    
+    // Lấy giá trị select nhưng bị giới hạn bởi role
+    let selectedKV = document.getElementById('kvSelect').value;
     const searchTerm = document.getElementById('searchInput').value;
+    
+    // Nếu không phải ADMIN, giới hạn chỉ được xem đúng khu vực của mình
+    if (currentUserRole !== 'ADMIN') {
+        // Force chọn đúng khu vực của user
+        if (selectedKV !== currentUserRole && selectedKV !== 'all') {
+            selectedKV = currentUserRole;
+        }
+        // Nếu đang là 'all' nhưng user không phải admin, chuyển về khu vực của họ
+        if (selectedKV === 'all') {
+            selectedKV = currentUserRole;
+        }
+        // Cập nhật lại select box
+        const kvSelect = document.getElementById('kvSelect');
+        kvSelect.value = selectedKV;
+        // Disable các option không phải khu vực của user
+        for (let option of kvSelect.options) {
+            if (option.value !== currentUserRole && option.value !== 'all') {
+                option.disabled = true;
+                option.style.opacity = '0.5';
+            }
+        }
+        if (kvSelect.options[0]) {
+            kvSelect.options[0].disabled = true;
+            kvSelect.options[0].style.opacity = '0.5';
+        }
+    }
     
     currentKV = selectedKV;
     currentSearchTerm = searchTerm;
@@ -632,7 +519,7 @@ function initDashboard() {
     document.getElementById('currentDate').innerHTML = `${formattedDate}`;
 }
 
-// Export to Excel
+// ========== CÁC HÀM TIỆN ÍCH ==========
 function exportToExcel() {
     const table = document.getElementById('dataTable');
     const html = table.outerHTML;
@@ -644,7 +531,6 @@ function exportToExcel() {
     URL.revokeObjectURL(link.href);
 }
 
-// Download chart as image
 function downloadChart(chartId) {
     const canvas = document.getElementById(chartId);
     const link = document.createElement('a');
@@ -653,7 +539,6 @@ function downloadChart(chartId) {
     link.click();
 }
 
-// Expand chart modal
 let modalChart = null;
 function expandChart(chartId) {
     const modal = document.getElementById('chartModal');
@@ -685,10 +570,75 @@ function closeModal() {
     }
 }
 
-// Event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    initDashboard();
+// ========== HÀM ĐĂNG NHẬP ==========
+function login(code) {
+    const trimmedCode = code.trim().toUpperCase();
+    const role = LOGIN_CREDENTIALS[trimmedCode];
     
+    if (role) {
+        currentUserRole = role;
+        currentUserRoleName = ROLE_NAMES[role];
+        
+        // Ẩn login modal, hiện dashboard
+        document.getElementById('loginModal').style.display = 'none';
+        document.getElementById('dashboardApp').style.display = 'block';
+        
+        // Cập nhật tên role trên header
+        document.getElementById('roleName').innerHTML = currentUserRoleName;
+        
+        // Khởi tạo dashboard
+        initDashboard();
+        
+        return true;
+    }
+    return false;
+}
+
+function logout() {
+    currentUserRole = null;
+    currentUserRoleName = '';
+    
+    // Ẩn dashboard, hiện login modal
+    document.getElementById('dashboardApp').style.display = 'none';
+    document.getElementById('loginModal').style.display = 'flex';
+    
+    // Reset form login
+    document.getElementById('accessCode').value = '';
+    document.getElementById('loginError').style.display = 'none';
+}
+
+// ========== EVENT LISTENERS ==========
+document.addEventListener('DOMContentLoaded', () => {
+    // Hiển thị login modal (dashboard ẩn sẵn)
+    document.getElementById('loginModal').style.display = 'flex';
+    document.getElementById('dashboardApp').style.display = 'none';
+    
+    // Sự kiện đăng nhập
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        const code = document.getElementById('accessCode').value;
+        const success = login(code);
+        
+        if (!success) {
+            const errorDiv = document.getElementById('loginError');
+            document.getElementById('errorText').innerHTML = 'Mã không hợp lệ! Vui lòng thử lại.';
+            errorDiv.style.display = 'flex';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+    });
+    
+    // Enter key trong ô nhập mã
+    document.getElementById('accessCode').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('loginBtn').click();
+        }
+    });
+    
+    // Sự kiện đăng xuất
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    
+    // Sự kiện lọc khu vực (sẽ được gọi sau khi đăng nhập)
     document.getElementById('kvSelect').addEventListener('change', () => {
         document.getElementById('searchInput').value = '';
         initDashboard();
@@ -704,4 +654,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('chartModal');
         if (e.target === modal) closeModal();
     };
+    
+    // Export các hàm ra window để dùng trong onclick
+    window.downloadChart = downloadChart;
+    window.expandChart = expandChart;
+    window.exportToExcel = exportToExcel;
+    window.closeModal = closeModal;
 });

@@ -17,7 +17,6 @@ body {
 
 /* Main Content */
 .main-content {
-  
     margin: 0 auto;
     padding: 24px 32px;
     animation: fadeIn 0.5s ease-out;
@@ -92,6 +91,43 @@ body {
     gap: 16px;
 }
 
+.role-badge {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    padding: 8px 18px;
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+}
+
+.role-badge i {
+    font-size: 14px;
+}
+
+.logout-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 40px;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.logout-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
 .date-badge {
     background: #f9fafb;
     padding: 10px 20px;
@@ -108,6 +144,158 @@ body {
 .date-badge i {
     color: #6366f1;
     font-size: 16px;
+}
+
+/* Login Modal */
+.login-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.login-modal-content {
+    background: white;
+    border-radius: 36px;
+    width: 100%;
+    max-width: 460px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-header {
+    background: linear-gradient(135deg, #ff6a6a 0%, #ff7300 100%);
+    padding: 32px;
+    text-align: center;
+    color: white;
+}
+
+.login-icon {
+    font-size: 52px;
+    margin-bottom: 12px;
+}
+
+.login-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.login-header p {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-top: 6px;
+}
+
+.login-body {
+    padding: 36px 32px 40px;
+}
+
+.input-group {
+    margin-bottom: 24px;
+}
+
+.input-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.input-label i {
+    color: #ff6a6a;
+    width: 18px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 14px 18px;
+    font-size: 15px;
+    border: 2px solid #e5e7eb;
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #ff6a6a;
+    box-shadow: 0 0 0 3px rgba(255, 106, 106, 0.15);
+}
+
+.login-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #ff6a6a 0%, #ff7300 100%);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 28px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -8px rgba(255, 106, 106, 0.4);
+}
+
+.login-error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 12px 18px;
+    border-radius: 18px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid #ef4444;
+}
+
+.demo-note {
+    margin-top: 24px;
+    background: #f9fafb;
+    border-radius: 20px;
+    padding: 16px;
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+    border: 1px dashed #d1d5db;
+}
+
+.demo-note strong {
+    color: #ff6a6a;
 }
 
 /* Filter Card */
@@ -252,7 +440,7 @@ body {
 }
 
 .stat-card.info .number {
-    color: #3b82f6;
+    color: #f59e0b;
 }
 
 /* Charts Row */
@@ -525,7 +713,7 @@ tbody tr:hover {
     background: white;
     border-radius: 28px;
     width: 90%;
-    
+    max-width: 1200px;
     overflow: hidden;
     animation: modalSlideIn 0.3s ease;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
@@ -712,7 +900,9 @@ tbody tr:hover {
     .chart-actions,
     .table-actions,
     .export-btn,
-    .modal {
+    .modal,
+    .logout-btn,
+    .role-badge {
         display: none;
     }
     
@@ -727,7 +917,4 @@ tbody tr:hover {
         box-shadow: none;
         border: 1px solid #ddd;
     }
-}
-.stat-card.info .number {
-    color: #f59e0b;
 }
