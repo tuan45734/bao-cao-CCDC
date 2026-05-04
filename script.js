@@ -15,7 +15,7 @@ const LOGIN_CREDENTIALS = {
     'KV4YXY': 'KV4',
     'KV5XXZ': 'KV5',
     'KV6XBC': 'KV6',
-    'ancungbatuyet99': 'ADMIN'
+    'ANCUNGBATUYET99': 'ADMIN'
 };
 
 const ROLE_NAMES = {
