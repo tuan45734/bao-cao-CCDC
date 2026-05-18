@@ -69,7 +69,7 @@ function processData() {
     const notUploadedByNPP = new Map();
     const notUploadedByLevel = new Map();
     
-    if (typeof notUploadedData !== 'undefined') {
+    if (notUploadedData && notUploadedData.length > 0) {
         notUploadedData.forEach(item => {
             const npp = item.npp.trim();
             const mucKe = item.muc_ke;
@@ -570,28 +570,72 @@ function closeModal() {
     }
 }
 
+// ========== LOADING & API ==========
+function showLoading(message = 'Đang tải dữ liệu từ API...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const text = document.getElementById('loadingText');
+    if (text) text.textContent = message;
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+async function refreshDashboardData() {
+    showLoading();
+    try {
+        await loadDataFromApi();
+        initDashboard();
+    } catch (error) {
+        console.error('Lỗi tải dữ liệu API:', error);
+        alert('Không thể tải dữ liệu từ API. Vui lòng thử lại sau.\n' + error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
 // ========== HÀM ĐĂNG NHẬP ==========
-function login(code) {
+async function login(code) {
     const trimmedCode = code.trim().toUpperCase();
     const role = LOGIN_CREDENTIALS[trimmedCode];
     
-    if (role) {
-        currentUserRole = role;
-        currentUserRoleName = ROLE_NAMES[role];
-        
-        // Ẩn login modal, hiện dashboard
+    if (!role) return false;
+
+    currentUserRole = role;
+    currentUserRoleName = ROLE_NAMES[role];
+
+    const loginBtn = document.getElementById('loginBtn');
+    loginBtn.disabled = true;
+
+    showLoading();
+
+    try {
+        await loadDataFromApi();
+
         document.getElementById('loginModal').style.display = 'none';
         document.getElementById('dashboardApp').style.display = 'block';
-        
-        // Cập nhật tên role trên header
         document.getElementById('roleName').innerHTML = currentUserRoleName;
-        
-        // Khởi tạo dashboard
+
         initDashboard();
-        
         return true;
+    } catch (error) {
+        console.error('Lỗi tải dữ liệu API:', error);
+        const errorDiv = document.getElementById('loginError');
+        document.getElementById('errorText').innerHTML =
+            'Không thể tải dữ liệu từ API. Kiểm tra kết nối mạng và thử lại.';
+        errorDiv.style.display = 'flex';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+        currentUserRole = null;
+        currentUserRoleName = '';
+        return false;
+    } finally {
+        loginBtn.disabled = false;
+        hideLoading();
     }
-    return false;
 }
 
 function logout() {
@@ -614,26 +658,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dashboardApp').style.display = 'none';
     
     // Sự kiện đăng nhập
-    document.getElementById('loginBtn').addEventListener('click', () => {
+    document.getElementById('loginBtn').addEventListener('click', async () => {
         const code = document.getElementById('accessCode').value;
-        const success = login(code);
+        const success = await login(code);
         
-        if (!success) {
+        if (!success && currentUserRole === null) {
             const errorDiv = document.getElementById('loginError');
-            document.getElementById('errorText').innerHTML = 'Mã không hợp lệ! Vui lòng thử lại.';
-            errorDiv.style.display = 'flex';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 3000);
+            if (errorDiv.style.display !== 'flex') {
+                document.getElementById('errorText').innerHTML = 'Mã không hợp lệ! Vui lòng thử lại.';
+                errorDiv.style.display = 'flex';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 3000);
+            }
         }
     });
     
     // Enter key trong ô nhập mã
     document.getElementById('accessCode').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
+            e.preventDefault();
             document.getElementById('loginBtn').click();
         }
     });
+
+    const refreshBtn = document.getElementById('refreshDataBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshDashboardData);
+    }
     
     // Sự kiện đăng xuất
     document.getElementById('logoutBtn').addEventListener('click', logout);
