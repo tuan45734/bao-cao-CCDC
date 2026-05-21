@@ -270,7 +270,8 @@ const exportedData = [
 {   "npp": "NPP Phú Diễm",   "sl": 80,   "ngay": "16/5/2026" },
 {   "npp": "NPP Tuấn Huyền",   "sl": 30,   "ngay": "18/5/2026" },
 {   "npp": "NPP Thành Lụa",   "sl": 20,   "ngay": "19/5/2026" },
-{   "npp": "NPP Nakoa",   "sl": 80,   "ngay": "19/5/2026" }
+{   "npp": "NPP Nakoa",   "sl": 80,   "ngay": "19/5/2026" },
+{   "npp": "NPP Trung Nam",   "sl": 60,   "ngay": "20/5/2026"}
 
 ];
 
