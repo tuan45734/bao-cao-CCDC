@@ -6,6 +6,13 @@ let currentKV = 'all';
 let currentSearchTerm = '';
 let currentUserRole = null;  // 'KV1'..'KV6' hoặc 'ADMIN'
 let currentUserRoleName = '';
+let weeklyChart = null;
+let weeklyLevelChart = null;
+let currentTab = 'overview';
+let currentWeeklyKV = 'all';
+let currentWeek = '';
+let weeklySearchTerm = '';
+let weeklyOnlyUploaded = false;
 
 // Map mã đăng nhập -> khu vực
 const LOGIN_CREDENTIALS = {
@@ -28,94 +35,188 @@ const ROLE_NAMES = {
     'ADMIN': 'Quản trị viên'
 };
 
-// ========== HÀM XỬ LÝ DỮ LIỆU (giữ nguyên từ file gốc) ==========
-function getSoKeByMuc(mucKe) {
-    if (mucKe === 'Mức 1 (TB 01 kệ)') return 1;
-    if (mucKe === 'Mức 2 (TB 02 kệ)') return 2;
-    if (mucKe === 'Mức 3 (TB 03 kệ)') return 3;
-    return 0;
+const KNOWN_KVS = ['KV1', 'KV2', 'KV3', 'KV4', 'KV5', 'KV6'];
+const UNKNOWN_KV = 'KV7';
+
+function normalizeNppName(name) {
+    return String(name || '').trim();
 }
 
+function getLevelWeight(mucKe) {
+    if (mucKe === null || mucKe === undefined) return 1;
+    const raw = String(mucKe).trim();
+    const m = raw.match(/(\d)/);
+    if (m && m[1]) return Number(m[1]) || 1;
+    if (/m%E1%BB%A5c\s*3|muc\s*3|Mức\s*3|Muc\s*3/i.test(raw)) return 3;
+    if (/m%E1%BB%A5c\s*2|muc\s*2|Mức\s*2|Muc\s*2/i.test(raw)) return 2;
+    return 1;
+}
+
+function getKnownNppKVMap() {
+    const map = new Map();
+    nppByKV.forEach(([npp, kv]) => {
+        const normalizedNpp = normalizeNppName(npp);
+        if (normalizedNpp) {
+            map.set(normalizedNpp, kv);
+        }
+    });
+    return map;
+}
+
+function getKvOrder(kvStats) {
+    const order = [...KNOWN_KVS];
+    if (kvStats && kvStats.has(UNKNOWN_KV)) {
+        order.push(UNKNOWN_KV);
+    }
+    return order.filter(kv => !kvStats || kvStats.has(kv));
+}
+
+function distributeShortageByLevel(shortage, primaryWeights, fallbackWeights = {}) {
+    const levelNames = ['Mức 1 (TB 01 kệ)', 'Mức 2 (TB 02 kệ)', 'Mức 3 (TB 03 kệ)'];
+    const result = {
+        'Mức 1 (TB 01 kệ)': 0,
+        'Mức 2 (TB 02 kệ)': 0,
+        'Mức 3 (TB 03 kệ)': 0
+    };
+
+    if (shortage <= 0) return result;
+
+    const weightSource = levelNames.map(level => [
+        level,
+        Number(primaryWeights[level] || 0)
+    ]);
+
+    let activeWeights = weightSource.filter(([, weight]) => weight > 0);
+    if (activeWeights.length === 0) {
+        activeWeights = levelNames.map(level => [
+            level,
+            Number(fallbackWeights[level] || 0)
+        ]).filter(([, weight]) => weight > 0);
+    }
+
+    if (activeWeights.length === 0) {
+        activeWeights = levelNames.map(level => [level, 1]);
+    }
+
+    const totalWeight = activeWeights.reduce((sum, [, weight]) => sum + weight, 0);
+    const fractions = [];
+    let assigned = 0;
+
+    activeWeights.forEach(([level, weight]) => {
+        const exact = (shortage * weight) / totalWeight;
+        const base = Math.floor(exact);
+        result[level] = base;
+        assigned += base;
+        fractions.push({ level, frac: exact - base });
+    });
+
+    let remainder = shortage - assigned;
+    fractions.sort((a, b) => b.frac - a.frac);
+    let index = 0;
+    while (remainder > 0 && fractions.length > 0) {
+        result[fractions[index % fractions.length].level] += 1;
+        remainder -= 1;
+        index += 1;
+    }
+
+    return result;
+}
+
+// ========== HÀM XỬ LÝ DỮ LIỆU ==========
 function processData() {
     const nppToKV = new Map();
     nppByKV.forEach(([npp, kv]) => {
-        nppToKV.set(npp.trim(), kv);
+        const normalizedNpp = normalizeNppName(npp);
+        if (normalizedNpp) {
+            nppToKV.set(normalizedNpp, kv);
+        }
     });
 
     const exportedByNPP = new Map();
     exportedData.forEach(item => {
-        const npp = item.npp.trim();
+        const npp = normalizeNppName(item.npp);
+        if (!npp) return;
         const current = exportedByNPP.get(npp) || 0;
         exportedByNPP.set(npp, current + (item.sl || 0));
     });
 
     const uploadedByNPP = new Map();
     const uploadedByLevel = new Map();
-    
-    uploadedData.forEach(item => {
-        const npp = item.npp.trim();
-        const mucKe = item.muc_ke;
-        const soLan = item.so_lan || 1;
-        const soKe = getSoKeByMuc(mucKe) * soLan;
-        
-        const currentTotal = uploadedByNPP.get(npp) || 0;
-        uploadedByNPP.set(npp, currentTotal + soKe);
-        
-        const levelKey = `${npp}|${mucKe}`;
-        const currentLevel = uploadedByLevel.get(levelKey) || 0;
-        uploadedByLevel.set(levelKey, currentLevel + soKe);
-    });
-
     const notUploadedByNPP = new Map();
     const notUploadedByLevel = new Map();
     
+    uploadedData.forEach(item => {
+        const npp = normalizeNppName(item.npp);
+        if (!npp) return;
+        const mucKe = item.muc_ke;
+        const soLan = item.so_lan || 1;
+        const weight = getLevelWeight(mucKe);
+        const currentTotal = uploadedByNPP.get(npp) || 0;
+        uploadedByNPP.set(npp, currentTotal + soLan * weight);
+
+        const levelKey = `${npp}|${mucKe}`;
+        const currentLevel = uploadedByLevel.get(levelKey) || 0;
+        uploadedByLevel.set(levelKey, currentLevel + soLan * weight);
+    });
+    
     if (notUploadedData && notUploadedData.length > 0) {
         notUploadedData.forEach(item => {
-            const npp = item.npp.trim();
+            const npp = normalizeNppName(item.npp);
+            if (!npp) return;
             const mucKe = item.muc_ke;
             const soLan = item.so_lan || 1;
-            const soKe = getSoKeByMuc(mucKe) * soLan;
-            
+            const weight = getLevelWeight(mucKe);
             const currentTotal = notUploadedByNPP.get(npp) || 0;
-            notUploadedByNPP.set(npp, currentTotal + soKe);
-            
+            notUploadedByNPP.set(npp, currentTotal + soLan * weight);
+
             const levelKey = `${npp}|${mucKe}`;
             const currentLevel = notUploadedByLevel.get(levelKey) || 0;
-            notUploadedByLevel.set(levelKey, currentLevel + soKe);
+            notUploadedByLevel.set(levelKey, currentLevel + soLan * weight);
         });
     }
 
-    const kvStats = new Map();
-    const allKVs = ['KV1', 'KV2', 'KV3', 'KV4', 'KV5', 'KV6'];
-    allKVs.forEach(kv => {
-        kvStats.set(kv, {
-            exported: 0,
-            registered: 0,
-            uploaded: 0,
-            notUploaded: 0,
-            uploadedByLevel: { 
-                'Mức 1 (TB 01 kệ)': 0, 
-                'Mức 2 (TB 02 kệ)': 0,
-                'Mức 3 (TB 03 kệ)': 0
-            },
-            notUploadedByLevel: {
-                'Mức 1 (TB 01 kệ)': 0,
-                'Mức 2 (TB 02 kệ)': 0,
-                'Mức 3 (TB 03 kệ)': 0
-            },
-            details: []
-        });
+    const allNppNames = new Set();
+    nppByKV.forEach(([npp]) => {
+        const normalizedNpp = normalizeNppName(npp);
+        if (normalizedNpp) allNppNames.add(normalizedNpp);
     });
+    exportedByNPP.forEach((_, npp) => allNppNames.add(npp));
+    uploadedByNPP.forEach((_, npp) => allNppNames.add(npp));
+    notUploadedByNPP.forEach((_, npp) => allNppNames.add(npp));
 
-    nppByKV.forEach(([npp, kv]) => {
-        npp = npp.trim();
+    const kvStats = new Map();
+    const initializeKvStat = kv => {
+        if (!kvStats.has(kv)) {
+            kvStats.set(kv, {
+                exported: 0,
+                registered: 0,
+                uploaded: 0,
+                notUploaded: 0,
+                uploadedByLevel: {
+                    'Mức 1 (TB 01 kệ)': 0,
+                    'Mức 2 (TB 02 kệ)': 0,
+                    'Mức 3 (TB 03 kệ)': 0
+                },
+                notUploadedByLevel: {
+                    'Mức 1 (TB 01 kệ)': 0,
+                    'Mức 2 (TB 02 kệ)': 0,
+                    'Mức 3 (TB 03 kệ)': 0
+                },
+                details: []
+            });
+        }
+        return kvStats.get(kv);
+    };
+
+    allNppNames.forEach(npp => {
+        const kv = nppToKV.get(npp) || UNKNOWN_KV;
+        const stats = initializeKvStat(kv);
         const exported = exportedByNPP.get(npp) || 0;
         const uploaded = uploadedByNPP.get(npp) || 0;
         const notUploaded = notUploadedByNPP.get(npp) || 0;
         const registered = uploaded + notUploaded;
-        const shortage = exported - registered;
-        
-        const stats = kvStats.get(kv);
+        const shortage = Math.max(0, exported - registered);
+
         stats.exported += exported;
         stats.uploaded += uploaded;
         stats.notUploaded += notUploaded;
@@ -134,20 +235,23 @@ function processData() {
                 stats.uploadedByLevel[level] = (stats.uploadedByLevel[level] || 0) + count;
             }
         }
-        
+
         const nppNotUploadLevels = {
             'Mức 1 (TB 01 kệ)': 0,
             'Mức 2 (TB 02 kệ)': 0,
             'Mức 3 (TB 03 kệ)': 0
         };
-        
+
         for (let [key, count] of notUploadedByLevel) {
             if (key.startsWith(npp + '|')) {
                 const level = key.split('|')[1];
                 nppNotUploadLevels[level] = (nppNotUploadLevels[level] || 0) + count;
-                stats.notUploadedByLevel[level] = (stats.notUploadedByLevel[level] || 0) + count;
             }
         }
+
+        Object.keys(nppNotUploadLevels).forEach(level => {
+            stats.notUploadedByLevel[level] = (stats.notUploadedByLevel[level] || 0) + nppNotUploadLevels[level];
+        });
         
         stats.details.push({
             npp,
@@ -161,11 +265,11 @@ function processData() {
         });
     });
 
-    for (let kv of allKVs) {
+    for (let kv of kvStats.keys()) {
         kvStats.get(kv).details.sort((a, b) => a.npp.localeCompare(b.npp));
     }
 
-    return { kvStats, allKVs };
+    return { kvStats, allKVs: getKvOrder(kvStats) };
 }
 
 // ========== CÁC HÀM CẬP NHẬT DASHBOARD (có điều chỉnh phân quyền) ==========
@@ -181,6 +285,7 @@ function updateStatsCards(kvStats, selectedKV) {
             totalNotUploaded += stat.notUploaded;
             totalShortage += Math.max(0, stat.exported - stat.registered);
         });
+        const totalNpp = Array.from(kvStats.values()).reduce((sum, stat) => sum + stat.details.length, 0);
         
         statsCards.innerHTML = `
             <div class="stat-card">
@@ -216,7 +321,7 @@ function updateStatsCards(kvStats, selectedKV) {
             <div class="stat-card">
                 <div class="stat-icon">🏠</div>
                 <h4>Tổng số NPP</h4>
-                <div class="number">${nppByKV.length}</div>
+                <div class="number">${totalNpp}</div>
                 <div class="unit">NPP</div>
             </div>
         `;
@@ -269,12 +374,12 @@ function updateStatsCards(kvStats, selectedKV) {
 function updateOverviewChart(kvStats, selectedKV) {
     const ctx = document.getElementById('overviewChart').getContext('2d');
     const chartTitle = document.getElementById('chartTitle');
-    const allKVs = ['KV1', 'KV2', 'KV3', 'KV4', 'KV5', 'KV6'];
     
     let labels = [], datasets = [];
     
     if (selectedKV === 'all') {
         chartTitle.innerHTML = 'Tổng quan kệ theo khu vực';
+        const allKVs = getKvOrder(kvStats);
         labels = allKVs;
         const exportedData = [], registeredData = [], uploadedData = [], notUploadedData = [], shortageData = [];
         
@@ -355,7 +460,7 @@ function updateLevelChart(kvStats, selectedKV) {
     
     if (selectedKV === 'all') {
         levelChartTitle.innerHTML = 'Thống kê kệ theo mức - Tất cả khu vực';
-        const allKVs = ['KV1', 'KV2', 'KV3', 'KV4', 'KV5', 'KV6'];
+        const allKVs = getKvOrder(kvStats);
         labels = allKVs;
         
         allKVs.forEach(kv => {
@@ -424,7 +529,7 @@ function updateDataTable(kvStats, selectedKV, searchTerm = '') {
     
     if (selectedKV === 'all') {
         tableTitle.innerHTML = 'Dữ liệu chi tiết - Tất cả khu vực';
-        const allKVs = ['KV1', 'KV2', 'KV3', 'KV4', 'KV5', 'KV6'];
+        const allKVs = getKvOrder(kvStats);
         
         allKVs.forEach(kv => {
             const stat = kvStats.get(kv);
@@ -470,6 +575,25 @@ function updateDataTable(kvStats, selectedKV, searchTerm = '') {
         }
     }
 }
+
+// ========== TAB SWITCHING ==========
+function switchTab(tabId) {
+    currentTab = tabId;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+    document.getElementById('overviewFilter').style.display = tabId === 'overview' ? 'flex' : 'none';
+    document.getElementById('statsCards').style.display = tabId === 'overview' ? 'grid' : 'none';
+    document.getElementById('overviewChartsRow').style.display = tabId === 'overview' ? 'grid' : 'none';
+    document.getElementById('overviewTableCard').style.display = tabId === 'overview' ? 'block' : 'none';
+    document.getElementById('weeklyReport').style.display = tabId === 'weekly' ? 'block' : 'none';
+
+    if (tabId === 'weekly') {
+        initWeeklyReport();
+    }
+}
+
+// Weekly report moved to weekly.js
 
 // ========== HÀM KHỞI TẠO DASHBOARD VỚI PHÂN QUYỀN ==========
 function initDashboard() {
@@ -588,6 +712,11 @@ async function refreshDashboardData() {
     try {
         await loadDataFromApi();
         initDashboard();
+        if (currentTab === 'weekly') {
+            currentWeek = '';
+            currentWeeklyKV = document.getElementById('weeklyKvSelect').value;
+            initWeeklyReport();
+        }
     } catch (error) {
         console.error('Lỗi tải dữ liệu API:', error);
         alert('Không thể tải dữ liệu từ API. Vui lòng thử lại sau.\n' + error.message);
@@ -702,6 +831,45 @@ document.addEventListener('DOMContentLoaded', () => {
         initDashboard();
     });
     
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Weekly report filters
+    document.getElementById('weekSelect').addEventListener('change', function() {
+        currentWeek = this.value;
+        currentWeeklyKV = document.getElementById('weeklyKvSelect').value;
+        weeklySearchTerm = document.getElementById('weeklySearchInput').value;
+        updateWeeklyStats();
+        updateWeeklyChart();
+        updateWeeklyLevelChart();
+        updateWeeklyTable();
+    });
+
+    document.getElementById('weeklyKvSelect').addEventListener('change', function() {
+        currentWeeklyKV = this.value;
+        updateWeeklyStats();
+        updateWeeklyChart();
+        updateWeeklyLevelChart();
+        updateWeeklyTable();
+    });
+
+    document.getElementById('weeklySearchInput').addEventListener('input', function() {
+        weeklySearchTerm = this.value;
+        updateWeeklyTable();
+    });
+    document.getElementById('weeklyClearSearch').addEventListener('click', function() {
+        document.getElementById('weeklySearchInput').value = '';
+        weeklySearchTerm = '';
+        updateWeeklyTable();
+    });
+
+    document.getElementById('weeklyOnlyUploaded').addEventListener('change', function() {
+        weeklyOnlyUploaded = this.checked;
+        updateWeeklyTable();
+    });
+
     window.onclick = (e) => {
         const modal = document.getElementById('chartModal');
         if (e.target === modal) closeModal();
