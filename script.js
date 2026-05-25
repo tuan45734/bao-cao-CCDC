@@ -97,6 +97,8 @@ const LOGIN_CREDENTIALS = {
     'KV4YXY': 'KV4',
     'KV5XXZ': 'KV5',
     'KV6XBC': 'KV6',
+    // Thêm mã cho KV7 (cập nhật theo mã thực tế của hệ thống nếu khác)
+    'KV7ZZA': 'KV7',
     '99': 'ADMIN'
 };
 
@@ -107,6 +109,7 @@ const ROLE_NAMES = {
     'KV4': 'Khu vực 4',
     'KV5': 'Khu vực 5',
     'KV6': 'Khu vực 6',
+    'KV7': 'Khu vực 7',
     'ADMIN': 'Quản trị viên'
 };
 
@@ -567,18 +570,15 @@ function initDashboard() {
     const selectedRegion = document.getElementById('regionSelect').value;
     let selectedKV = document.getElementById('kvSelect').value;
     const searchTerm = document.getElementById('searchInput').value;
-    const visibleKVs = getKVsForRegion(selectedRegion);
+    let visibleKVs = getKVsForRegion(selectedRegion);
     currentRegion = selectedRegion;
     
     // Nếu không phải ADMIN, giới hạn chỉ được xem đúng khu vực của mình
     const kvSelect = document.getElementById('kvSelect');
-    if (currentUserRole !== 'ADMIN') {
-        // Chỉ cho xem khu vực thuộc miền đang chọn và đúng role của user
-        if (visibleKVs.includes(currentUserRole)) {
-            selectedKV = currentUserRole;
-        } else {
-            selectedKV = 'all';
-        }
+    if (currentUserRole !== 'ADMIN' && currentUserRole) {
+        // Người dùng non-admin chỉ thấy khu vực của chính họ
+        visibleKVs = [currentUserRole];
+        selectedKV = currentUserRole;
         selectedKV = syncKVOptions(kvSelect, visibleKVs, selectedKV);
     } else {
         selectedKV = syncKVOptions(kvSelect, visibleKVs, selectedKV);
