@@ -112,6 +112,156 @@ const ROLE_NAMES = {
     'ADMIN': 'Quản trị viên'
 };
 
+const NPP_SALE_GROUP_API_URL = 'https://openapi.mobiwork.vn/OpenAPI/V1/SaleGroup';
+const NPP_SALE_GROUP_API_HEADERS = {
+    accept: 'application/json',
+    Authorization: 'Basic NjlhZTZlNmM4YTY0NjVmNDFlNTNhZmI0OjFuYzFnc3J1N2p2Ym10eTdncGV5NWk='
+};
+
+const UNKNOWN_KV = 'Chưa phân khu';
+
+let nppByKV = [];
+let nppByKVLoadPromise = null;
+
+function isKVCode(value) {
+    return /^KV[1-7]$/.test((value || '').trim());
+}
+
+function buildNppByKVFromSaleGroups(groups) {
+    const groupByCode = new Map();
+    const childCodes = new Set();
+    const kvCache = new Map();
+
+    groups.forEach(item => {
+        const groupCode = (item?.ma_nhom || '').trim();
+        const parentCode = (item?.ma_nhom_cha || '').trim();
+
+        if (!groupCode) {
+            return;
+        }
+
+        groupByCode.set(groupCode, item);
+
+        if (parentCode) {
+            childCodes.add(parentCode);
+        }
+    });
+
+    function resolveKV(groupCode, visited = new Set()) {
+        const normalizedCode = (groupCode || '').trim();
+
+        if (!normalizedCode) {
+            return null;
+        }
+
+        if (isKVCode(normalizedCode)) {
+            return normalizedCode;
+        }
+
+        if (kvCache.has(normalizedCode)) {
+            return kvCache.get(normalizedCode);
+        }
+
+        if (visited.has(normalizedCode)) {
+            return null;
+        }
+
+        visited.add(normalizedCode);
+
+        const currentItem = groupByCode.get(normalizedCode);
+        const parentCode = (currentItem?.ma_nhom_cha || '').trim();
+        const resolvedKV = resolveKV(parentCode, visited);
+
+        kvCache.set(normalizedCode, resolvedKV);
+        return resolvedKV;
+    }
+
+    function getDisplayName(item) {
+        return (item?.ten_nhom || item?.ma_nhom || '').trim();
+    }
+
+    const mappedRows = [];
+    const seen = new Set();
+
+    groups.forEach(item => {
+        const groupCode = (item?.ma_nhom || '').trim();
+        const displayName = getDisplayName(item);
+        const isLeaf = groupCode ? !childCodes.has(groupCode) : false;
+        const isNppNode = /^NPP\b/i.test(groupCode) || /^NPP\b/i.test(displayName);
+
+        if (!groupCode || groupCode.startsWith('KV') || (!isLeaf && !isNppNode)) {
+            return;
+        }
+
+        const kvCode = resolveKV(groupCode) || UNKNOWN_KV;
+
+        if (!displayName) {
+            return;
+        }
+
+        const dedupeKey = `${displayName}|${kvCode}`;
+        if (seen.has(dedupeKey)) {
+            return;
+        }
+
+        seen.add(dedupeKey);
+        mappedRows.push([displayName, kvCode]);
+    });
+
+    mappedRows.sort((left, right) => {
+        const leftUnknown = left[1] === UNKNOWN_KV;
+        const rightUnknown = right[1] === UNKNOWN_KV;
+
+        if (leftUnknown !== rightUnknown) {
+            return leftUnknown ? 1 : -1;
+        }
+
+        const kvCompare = left[1].localeCompare(right[1], 'vi');
+        if (kvCompare !== 0) {
+            return kvCompare;
+        }
+        return left[0].localeCompare(right[0], 'vi');
+    });
+
+    return mappedRows;
+}
+
+async function loadNppByKV() {
+    try {
+        const response = await fetch(NPP_SALE_GROUP_API_URL, {
+            method: 'GET',
+            headers: NPP_SALE_GROUP_API_HEADERS
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const groups = Array.isArray(payload?.data) ? payload.data : [];
+        const mappedRows = buildNppByKVFromSaleGroups(groups);
+
+        nppByKV = mappedRows;
+        if (currentUserRole) {
+            initDashboard();
+        }
+
+        return nppByKV;
+    } catch (error) {
+        console.error('Không tải được dữ liệu NPP từ API.', error);
+        nppByKV = [];
+        return nppByKV;
+    }
+}
+
+function ensureNppByKVLoaded() {
+    if (!nppByKVLoadPromise) {
+        nppByKVLoadPromise = loadNppByKV();
+    }
+
+    return nppByKVLoadPromise;
+}
+
 // ========== HÀM XỬ LÝ DỮ LIỆU (giữ nguyên từ file gốc) ==========
 function getSoKeByMuc(mucKe) {
     if (mucKe === 'Mức 1 (TB 01 kệ)') return 1;
@@ -122,8 +272,9 @@ function getSoKeByMuc(mucKe) {
 
 function processData() {
     const nppToKV = new Map();
+
     nppByKV.forEach(([npp, kv]) => {
-        nppToKV.set(npp.trim(), kv);
+        nppToKV.set(npp.trim(), kv || UNKNOWN_KV);
     });
 
     const exportedByNPP = new Map();
@@ -175,15 +326,25 @@ function processData() {
         kvStats.set(kv, createEmptyStat());
     });
 
+    if (!kvStats.has(UNKNOWN_KV)) {
+        kvStats.set(UNKNOWN_KV, createEmptyStat());
+    }
+
     nppByKV.forEach(([npp, kv]) => {
         npp = npp.trim();
+        const normalizedKV = kv || UNKNOWN_KV;
+        const stats = kvStats.get(normalizedKV);
+
+        if (!stats) {
+            return;
+        }
+
         const exported = exportedByNPP.get(npp) || 0;
         const uploaded = uploadedByNPP.get(npp) || 0;
         const notUploaded = notUploadedByNPP.get(npp) || 0;
         const registered = uploaded + notUploaded;
         const shortage = exported - registered;
-        
-        const stats = kvStats.get(kv);
+
         stats.exported += exported;
         stats.uploaded += uploaded;
         stats.notUploaded += notUploaded;
@@ -649,7 +810,9 @@ function closeModal() {
 }
 
 // ========== HÀM ĐĂNG NHẬP ==========
-function login(code) {
+async function login(code) {
+    await ensureNppByKVLoaded();
+
     const trimmedCode = code.trim().toUpperCase();
     const role = LOGIN_CREDENTIALS[trimmedCode];
     
@@ -690,11 +853,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hiển thị login modal (dashboard ẩn sẵn)
     document.getElementById('loginModal').style.display = 'flex';
     document.getElementById('dashboardApp').style.display = 'none';
+    void ensureNppByKVLoaded();
     
     // Sự kiện đăng nhập
-    document.getElementById('loginBtn').addEventListener('click', () => {
+    document.getElementById('loginBtn').addEventListener('click', async () => {
         const code = document.getElementById('accessCode').value;
-        const success = login(code);
+        const success = await login(code);
         
         if (!success) {
             const errorDiv = document.getElementById('loginError');
