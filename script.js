@@ -97,7 +97,6 @@ const LOGIN_CREDENTIALS = {
     'KV4YXY': 'KV4',
     'KV5XXZ': 'KV5',
     'KV6XBC': 'KV6',
-    // Thêm mã cho KV7 (cập nhật theo mã thực tế của hệ thống nếu khác)
     'KV7ZZA': 'KV7',
     '99': 'ADMIN'
 };
