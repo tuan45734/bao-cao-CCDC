@@ -2,7 +2,7 @@
 const exportedData = [
     { "npp": "NPP Vũ Tấm", "sl": 480 },
     { "npp": "NPP Dũng Cúc", "sl": 36 },
-    { "npp": "NPP Công Giang", "sl": 148 },
+    { "npp": "NPP Công Giang", "sl": 102 },
     { "npp": "NPP Thảo Nam", "sl": 170 },
     { "npp": "NPP Tuấn Yến", "sl": 134 },
     { "npp": "NPP Bảo Lâm", "sl": 281 },
