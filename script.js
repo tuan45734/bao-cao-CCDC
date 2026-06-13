@@ -286,16 +286,16 @@ function processData() {
 
     const uploadedByNPP = new Map();
     const uploadedByLevel = new Map();
-    
+
     uploadedData.forEach(item => {
         const npp = item.npp.trim();
         const mucKe = item.muc_ke;
         const soLan = item.so_lan || 1;
         const soKe = getSoKeByMuc(mucKe) * soLan;
-        
+
         const currentTotal = uploadedByNPP.get(npp) || 0;
         uploadedByNPP.set(npp, currentTotal + soKe);
-        
+
         const levelKey = `${npp}|${mucKe}`;
         const currentLevel = uploadedByLevel.get(levelKey) || 0;
         uploadedByLevel.set(levelKey, currentLevel + soKe);
@@ -303,17 +303,17 @@ function processData() {
 
     const notUploadedByNPP = new Map();
     const notUploadedByLevel = new Map();
-    
+
     if (typeof notUploadedData !== 'undefined') {
         notUploadedData.forEach(item => {
             const npp = item.npp.trim();
             const mucKe = item.muc_ke;
             const soLan = item.so_lan || 1;
             const soKe = getSoKeByMuc(mucKe) * soLan;
-            
+
             const currentTotal = notUploadedByNPP.get(npp) || 0;
             notUploadedByNPP.set(npp, currentTotal + soKe);
-            
+
             const levelKey = `${npp}|${mucKe}`;
             const currentLevel = notUploadedByLevel.get(levelKey) || 0;
             notUploadedByLevel.set(levelKey, currentLevel + soKe);
@@ -349,13 +349,13 @@ function processData() {
         stats.uploaded += uploaded;
         stats.notUploaded += notUploaded;
         stats.registered += registered;
-        
+
         const nppUploadLevels = {
             'Mức 1 (TB 01 kệ)': 0,
             'Mức 2 (TB 02 kệ)': 0,
             'Mức 3 (TB 03 kệ)': 0
         };
-        
+
         for (let [key, count] of uploadedByLevel) {
             if (key.startsWith(npp + '|')) {
                 const level = key.split('|')[1];
@@ -363,13 +363,13 @@ function processData() {
                 stats.uploadedByLevel[level] = (stats.uploadedByLevel[level] || 0) + count;
             }
         }
-        
+
         const nppNotUploadLevels = {
             'Mức 1 (TB 01 kệ)': 0,
             'Mức 2 (TB 02 kệ)': 0,
             'Mức 3 (TB 03 kệ)': 0
         };
-        
+
         for (let [key, count] of notUploadedByLevel) {
             if (key.startsWith(npp + '|')) {
                 const level = key.split('|')[1];
@@ -377,7 +377,7 @@ function processData() {
                 stats.notUploadedByLevel[level] = (stats.notUploadedByLevel[level] || 0) + count;
             }
         }
-        
+
         stats.details.push({
             npp,
             exported,
@@ -400,7 +400,7 @@ function processData() {
 // ========== CÁC HÀM CẬP NHẬT DASHBOARD (có điều chỉnh phân quyền) ==========
 function updateStatsCards(kvStats, selectedKV, visibleKVs) {
     const statsCards = document.getElementById('statsCards');
-    
+
     if (selectedKV === 'all') {
         let totalExported = 0, totalRegistered = 0, totalUploaded = 0, totalNotUploaded = 0, totalShortage = 0;
         visibleKVs.forEach(kv => {
@@ -411,7 +411,7 @@ function updateStatsCards(kvStats, selectedKV, visibleKVs) {
             totalNotUploaded += stat.notUploaded;
             totalShortage += Math.max(0, stat.exported - stat.registered);
         });
-        
+
         statsCards.innerHTML = `
             <div class="stat-card">
                 <div class="stat-icon">📦</div>
@@ -454,7 +454,7 @@ function updateStatsCards(kvStats, selectedKV, visibleKVs) {
         const stat = kvStats.get(selectedKV) || createEmptyStat();
         const shortage = Math.max(0, stat.exported - stat.registered);
         const completionRate = stat.exported > 0 ? ((stat.registered / stat.exported) * 100).toFixed(1) : 0;
-        
+
         statsCards.innerHTML = `
             <div class="stat-card">
                 <div class="stat-icon">📦</div>
@@ -499,15 +499,15 @@ function updateStatsCards(kvStats, selectedKV, visibleKVs) {
 function updateOverviewChart(kvStats, selectedKV, visibleKVs) {
     const ctx = document.getElementById('overviewChart').getContext('2d');
     const chartTitle = document.getElementById('chartTitle');
-    
+
     let labels = [], datasets = [];
-    
+
     if (selectedKV === 'all') {
         const regionLabel = getRegionLabel(currentRegion);
         chartTitle.innerHTML = currentRegion === 'all' ? 'Tổng quan kệ theo khu vực' : `Tổng quan kệ theo ${regionLabel.toLowerCase()}`;
         labels = visibleKVs.length > 0 ? visibleKVs : ['Không có dữ liệu'];
         const exportedData = [], registeredData = [], uploadedData = [], notUploadedData = [], shortageData = [];
-        
+
         (visibleKVs.length > 0 ? visibleKVs : ['KV_EMPTY']).forEach(kv => {
             if (kv === 'KV_EMPTY') {
                 exportedData.push(0);
@@ -524,7 +524,7 @@ function updateOverviewChart(kvStats, selectedKV, visibleKVs) {
             notUploadedData.push(stat.notUploaded);
             shortageData.push(Math.max(0, stat.exported - stat.registered));
         });
-        
+
         datasets = [
             { label: 'Kệ đã xuất', data: exportedData, backgroundColor: 'rgba(99, 102, 241, 0.85)', borderRadius: 8, borderWidth: 0 },
             { label: 'Kệ đã đăng ký', data: registeredData, backgroundColor: 'rgba(139, 92, 246, 0.85)', borderRadius: 8, borderWidth: 0 },
@@ -541,7 +541,7 @@ function updateOverviewChart(kvStats, selectedKV, visibleKVs) {
         const uploadedData = stat.details.map(d => d.uploaded);
         const notUploadedData = stat.details.map(d => d.notUploaded);
         const shortageData = stat.details.map(d => Math.max(0, d.shortage));
-        
+
         datasets = [
             { label: 'Kệ đã xuất', data: exportedData, backgroundColor: 'rgba(99, 102, 241, 0.85)', borderRadius: 8, borderWidth: 0 },
             { label: 'Kệ đã đăng ký', data: registeredData, backgroundColor: 'rgba(139, 92, 246, 0.85)', borderRadius: 8, borderWidth: 0 },
@@ -550,9 +550,9 @@ function updateOverviewChart(kvStats, selectedKV, visibleKVs) {
             { label: 'Kệ thiếu', data: shortageData, backgroundColor: 'rgba(239, 68, 68, 0.85)', borderRadius: 8, borderWidth: 0 }
         ];
     }
-    
+
     if (overviewChart) overviewChart.destroy();
-    
+
     overviewChart = new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets },
@@ -561,9 +561,9 @@ function updateOverviewChart(kvStats, selectedKV, visibleKVs) {
             maintainAspectRatio: true,
             plugins: {
                 legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 12 } } },
-                tooltip: { 
+                tooltip: {
                     callbacks: {
-                        title: function(tooltipItems) {
+                        title: function (tooltipItems) {
                             const label = tooltipItems[0].label;
                             if (selectedKV === 'all') {
                                 return getKVLabel(label);
@@ -585,15 +585,15 @@ function updateOverviewChart(kvStats, selectedKV, visibleKVs) {
 function updateLevelChart(kvStats, selectedKV, visibleKVs) {
     const ctx = document.getElementById('levelChart').getContext('2d');
     const levelChartTitle = document.getElementById('levelChartTitle');
-    
+
     let labels = [];
     let uploadedLevel1 = [], uploadedLevel2 = [], uploadedLevel3 = [];
     let notUploadedLevel1 = [], notUploadedLevel2 = [], notUploadedLevel3 = [];
-    
+
     if (selectedKV === 'all') {
         levelChartTitle.innerHTML = currentRegion === 'all' ? 'Thống kê kệ theo mức - Tất cả khu vực' : `Thống kê kệ theo mức - ${getRegionLabel(currentRegion)}`;
         labels = visibleKVs.length > 0 ? visibleKVs : ['Không có dữ liệu'];
-        
+
         (visibleKVs.length > 0 ? visibleKVs : ['KV_EMPTY']).forEach(kv => {
             if (kv === 'KV_EMPTY') {
                 uploadedLevel1.push(0);
@@ -616,7 +616,7 @@ function updateLevelChart(kvStats, selectedKV, visibleKVs) {
         levelChartTitle.innerHTML = `Thống kê kệ theo mức - ${getKVLabel(selectedKV)}`;
         const stat = kvStats.get(selectedKV) || createEmptyStat();
         const nppsWithData = stat.details.filter(d => d.uploaded > 0 || d.notUploaded > 0);
-        
+
         if (nppsWithData.length > 0) {
             labels = nppsWithData.map(d => d.npp);
             uploadedLevel1 = nppsWithData.map(d => d.levels['Mức 1 (TB 01 kệ)'] || 0);
@@ -631,9 +631,9 @@ function updateLevelChart(kvStats, selectedKV, visibleKVs) {
             notUploadedLevel1 = [0]; notUploadedLevel2 = [0]; notUploadedLevel3 = [0];
         }
     }
-    
+
     if (levelChart) levelChart.destroy();
-    
+
     levelChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -666,11 +666,11 @@ function updateDataTable(kvStats, selectedKV, visibleKVs, searchTerm = '') {
     const tableBody = document.getElementById('tableBody');
     const tableTitle = document.getElementById('tableTitle');
     tableBody.innerHTML = '';
-    
+
     if (selectedKV === 'all') {
         tableTitle.innerHTML = currentRegion === 'all' ? 'Dữ liệu chi tiết - Tất cả khu vực' : `Dữ liệu chi tiết - ${getRegionLabel(currentRegion)}`;
         const displayKVs = visibleKVs.length > 0 ? visibleKVs : [];
-        
+
         displayKVs.forEach(kv => {
             const stat = kvStats.get(kv);
             let filteredDetails = stat.details;
@@ -678,12 +678,12 @@ function updateDataTable(kvStats, selectedKV, visibleKVs, searchTerm = '') {
                 filteredDetails = stat.details.filter(d => d.npp.toLowerCase().includes(searchTerm.toLowerCase()));
             }
             if (filteredDetails.length === 0) return;
-            
+
             const kvHeader = document.createElement('tr');
             kvHeader.style.background = '#f9fafb';
             kvHeader.innerHTML = `<td colspan="7" style="background: #f9fafb; font-weight: 600; border-top: 2px solid #e5e7eb;">📌 ${kv} - Xuất: ${stat.exported.toLocaleString()} | Đăng ký: ${stat.registered.toLocaleString()} | Thiếu: ${Math.max(0, stat.exported - stat.registered).toLocaleString()}</td>`;
             tableBody.appendChild(kvHeader);
-            
+
             filteredDetails.forEach(detail => {
                 const row = document.createElement('tr');
                 const shortageClass = detail.shortage > 0 ? 'badge-danger' : 'badge-success';
@@ -705,7 +705,7 @@ function updateDataTable(kvStats, selectedKV, visibleKVs, searchTerm = '') {
         if (searchTerm) {
             filteredDetails = stat.details.filter(d => d.npp.toLowerCase().includes(searchTerm.toLowerCase()));
         }
-        
+
         if (filteredDetails.length === 0) {
             const noDataRow = document.createElement('tr');
             noDataRow.innerHTML = `<td colspan="7" class="no-data">🔍 Không tìm thấy NPP "${searchTerm}" trong ${selectedKV}</td>`;
@@ -725,14 +725,14 @@ function updateDataTable(kvStats, selectedKV, visibleKVs, searchTerm = '') {
 // ========== HÀM KHỞI TẠO DASHBOARD VỚI PHÂN QUYỀN ==========
 function initDashboard() {
     const { kvStats } = processData();
-    
+
     // Lấy giá trị select nhưng bị giới hạn bởi role
     const selectedRegion = document.getElementById('regionSelect').value;
     let selectedKV = document.getElementById('kvSelect').value;
     const searchTerm = document.getElementById('searchInput').value;
     let visibleKVs = getKVsForRegion(selectedRegion);
     currentRegion = selectedRegion;
-    
+
     // Nếu không phải ADMIN, giới hạn chỉ được xem đúng khu vực của mình
     const kvSelect = document.getElementById('kvSelect');
     if (currentUserRole !== 'ADMIN' && currentUserRole) {
@@ -743,15 +743,15 @@ function initDashboard() {
     } else {
         selectedKV = syncKVOptions(kvSelect, visibleKVs, selectedKV);
     }
-    
+
     currentKV = selectedKV;
     currentSearchTerm = searchTerm;
-    
+
     updateStatsCards(kvStats, selectedKV, visibleKVs);
     updateOverviewChart(kvStats, selectedKV, visibleKVs);
     updateLevelChart(kvStats, selectedKV, visibleKVs);
     updateDataTable(kvStats, selectedKV, visibleKVs, searchTerm);
-    
+
     // Update current date
     const today = new Date();
     const formattedDate = today.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -783,14 +783,14 @@ function expandChart(chartId) {
     const modal = document.getElementById('chartModal');
     const modalCanvas = document.getElementById('modalChart');
     const title = chartId === 'overviewChart' ? 'Biểu đồ tổng quan' : 'Biểu đồ thống kê theo mức kệ';
-    
+
     document.getElementById('modalTitle').innerHTML = title;
     modal.style.display = 'flex';
-    
+
     if (modalChart) modalChart.destroy();
     const ctx = modalCanvas.getContext('2d');
     const originalChart = chartId === 'overviewChart' ? overviewChart : levelChart;
-    
+
     if (originalChart) {
         modalChart = new Chart(ctx, {
             type: originalChart.config.type,
@@ -815,21 +815,21 @@ async function login(code) {
 
     const trimmedCode = code.trim().toUpperCase();
     const role = LOGIN_CREDENTIALS[trimmedCode];
-    
+
     if (role) {
         currentUserRole = role;
         currentUserRoleName = ROLE_NAMES[role];
-        
+
         // Ẩn login modal, hiện dashboard
         document.getElementById('loginModal').style.display = 'none';
         document.getElementById('dashboardApp').style.display = 'block';
-        
+
         // Cập nhật tên role trên header
         document.getElementById('roleName').innerHTML = currentUserRoleName;
-        
+
         // Khởi tạo dashboard
         initDashboard();
-        
+
         return true;
     }
     return false;
@@ -838,11 +838,11 @@ async function login(code) {
 function logout() {
     currentUserRole = null;
     currentUserRoleName = '';
-    
+
     // Ẩn dashboard, hiện login modal
     document.getElementById('dashboardApp').style.display = 'none';
     document.getElementById('loginModal').style.display = 'flex';
-    
+
     // Reset form login
     document.getElementById('accessCode').value = '';
     document.getElementById('loginError').style.display = 'none';
@@ -854,12 +854,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginModal').style.display = 'flex';
     document.getElementById('dashboardApp').style.display = 'none';
     void ensureNppByKVLoaded();
-    
+
     // Sự kiện đăng nhập
     document.getElementById('loginBtn').addEventListener('click', async () => {
         const code = document.getElementById('accessCode').value;
         const success = await login(code);
-        
+
         if (!success) {
             const errorDiv = document.getElementById('loginError');
             document.getElementById('errorText').innerHTML = 'Mã không hợp lệ! Vui lòng thử lại.';
@@ -869,17 +869,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 3000);
         }
     });
-    
+
     // Enter key trong ô nhập mã
     document.getElementById('accessCode').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             document.getElementById('loginBtn').click();
         }
     });
-    
+
     // Sự kiện đăng xuất
     document.getElementById('logoutBtn').addEventListener('click', logout);
-    
+
     // Sự kiện lọc miền và khu vực
     document.getElementById('regionSelect').addEventListener('change', () => {
         document.getElementById('searchInput').value = '';
@@ -890,18 +890,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('searchInput').value = '';
         initDashboard();
     });
-    
+
     document.getElementById('searchInput').addEventListener('input', () => initDashboard());
     document.getElementById('clearSearch').addEventListener('click', () => {
         document.getElementById('searchInput').value = '';
         initDashboard();
     });
-    
+
     window.onclick = (e) => {
         const modal = document.getElementById('chartModal');
         if (e.target === modal) closeModal();
     };
-    
+
     // Export các hàm ra window để dùng trong onclick
     window.downloadChart = downloadChart;
     window.expandChart = expandChart;

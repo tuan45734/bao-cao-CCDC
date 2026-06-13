@@ -27,6 +27,7 @@ body {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -177,6 +178,7 @@ body {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -734,6 +736,7 @@ tbody tr:hover {
         transform: translateY(-50px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
@@ -792,7 +795,7 @@ tbody tr:hover {
     .stats-grid {
         gap: 16px;
     }
-    
+
     .stat-card .number {
         font-size: 28px;
     }
@@ -802,11 +805,11 @@ tbody tr:hover {
     .main-content {
         padding: 20px;
     }
-    
+
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .charts-row {
         grid-template-columns: 1fr;
     }
@@ -816,35 +819,35 @@ tbody tr:hover {
     .main-content {
         padding: 16px;
     }
-    
+
     .header {
         flex-direction: column;
         text-align: center;
         gap: 16px;
     }
-    
+
     .logo-header {
         flex-direction: column;
         text-align: center;
     }
-    
+
     .stats-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .table-header-custom {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .search-wrapper {
         width: 100%;
     }
-    
+
     #searchInput {
         width: 100%;
     }
-    
+
     .filters-row {
         grid-template-columns: 1fr;
     }
@@ -853,20 +856,21 @@ tbody tr:hover {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .filter-controls {
         max-width: 100%;
     }
-    
+
     .chart-body {
         min-height: 300px;
     }
-    
+
     .chart-header h3 {
         font-size: 14px;
     }
-    
-    th, td {
+
+    th,
+    td {
         padding: 10px 12px;
         font-size: 12px;
     }
@@ -897,6 +901,7 @@ tbody tr:hover {
     0% {
         background-position: -1000px 0;
     }
+
     100% {
         background-position: 1000px 0;
     }
@@ -910,6 +915,7 @@ tbody tr:hover {
 
 /* Print Styles */
 @media print {
+
     .filter-card,
     .chart-actions,
     .table-actions,
@@ -919,11 +925,11 @@ tbody tr:hover {
     .role-badge {
         display: none;
     }
-    
+
     .main-content {
         padding: 0;
     }
-    
+
     .chart-card,
     .table-card,
     .stat-card {
